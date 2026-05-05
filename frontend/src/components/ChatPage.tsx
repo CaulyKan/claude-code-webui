@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { ChevronLeftIcon } from "@heroicons/react/24/outline";
+import { ChevronLeftIcon, FolderOpenIcon } from "@heroicons/react/24/outline";
 import type {
   ChatRequest,
   ChatMessage,
@@ -16,6 +16,7 @@ import { useAutoHistoryLoader } from "../hooks/useHistoryLoader";
 import { SettingsButton } from "./SettingsButton";
 import { SettingsModal } from "./SettingsModal";
 import { HistoryButton } from "./chat/HistoryButton";
+import { FileBrowser } from "./FileBrowser";
 import { ChatInput } from "./chat/ChatInput";
 import { ChatMessages } from "./chat/ChatMessages";
 import { HistoryView } from "./HistoryView";
@@ -47,7 +48,8 @@ export function ChatPage() {
   const currentView = searchParams.get("view");
   const sessionId = searchParams.get("sessionId");
   const isHistoryView = currentView === "history";
-  const isLoadedConversation = !!sessionId && !isHistoryView;
+  const isFilesView = currentView === "files";
+  const isLoadedConversation = !!sessionId && !isHistoryView && !isFilesView;
 
   const { processStreamLine } = useClaudeStreaming();
   const { abortRequest, createAbortHandler } = useAbortController();
@@ -376,6 +378,12 @@ export function ChatPage() {
     navigate({ search: searchParams.toString() });
   }, [navigate]);
 
+  const handleFilesClick = useCallback(() => {
+    const searchParams = new URLSearchParams();
+    searchParams.set("view", "files");
+    navigate({ search: searchParams.toString() });
+  }, [navigate]);
+
   const handleSettingsClick = useCallback(() => {
     setIsSettingsOpen(true);
   }, []);
@@ -439,7 +447,7 @@ export function ChatPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-4 sm:mb-8 flex-shrink-0">
           <div className="flex items-center gap-4">
-            {isHistoryView && (
+            {(isHistoryView || isFilesView) && (
               <button
                 onClick={handleBackToChat}
                 className="p-2 rounded-lg bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-all duration-200 backdrop-blur-sm shadow-sm hover:shadow-md"
@@ -467,7 +475,7 @@ export function ChatPage() {
                   >
                     Claude Code Web UI
                   </button>
-                  {(isHistoryView || sessionId) && (
+                  {(isHistoryView || isFilesView || sessionId) && (
                     <>
                       <span
                         className="text-slate-800 dark:text-slate-100 text-lg sm:text-3xl font-bold tracking-tight mx-3 select-none"
@@ -482,7 +490,9 @@ export function ChatPage() {
                       >
                         {isHistoryView
                           ? "Conversation History"
-                          : "Conversation"}
+                          : isFilesView
+                            ? "Files"
+                            : "Conversation"}
                       </h1>
                     </>
                   )}
@@ -507,13 +517,29 @@ export function ChatPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {!isHistoryView && <HistoryButton onClick={handleHistoryClick} />}
+            {!isHistoryView && !isFilesView && (
+              <button
+                onClick={handleFilesClick}
+                className="p-3 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-all duration-200 backdrop-blur-sm shadow-sm hover:shadow-md"
+                aria-label="Browse project files"
+              >
+                <FolderOpenIcon className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+              </button>
+            )}
+            {!isHistoryView && !isFilesView && (
+              <HistoryButton onClick={handleHistoryClick} />
+            )}
             <SettingsButton onClick={handleSettingsClick} />
           </div>
         </div>
 
         {/* Main Content */}
-        {isHistoryView ? (
+        {isFilesView ? (
+          <FileBrowser
+            workingDirectory={workingDirectory || ""}
+            onBack={handleBackToChat}
+          />
+        ) : isHistoryView ? (
           <HistoryView
             workingDirectory={workingDirectory || ""}
             encodedName={getEncodedName()}

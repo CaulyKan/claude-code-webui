@@ -42,3 +42,18 @@ export const getConversationUrl = (
 ) => {
   return `${API_CONFIG.ENDPOINTS.CONVERSATIONS}/${encodedProjectName}/histories/${sessionId}`;
 };
+
+// Helper function to get file list URL
+export const getFileListUrl = (projectDir: string, subpath?: string) => {
+  const params = new URLSearchParams({ dir: projectDir });
+  if (subpath) {
+    params.set("path", subpath);
+  }
+  return `/api/files/list?${params.toString()}`;
+};
+
+// Helper function to get file content URL
+export const getFileContentUrl = (projectDir: string, filePath: string) => {
+  const params = new URLSearchParams({ dir: projectDir, path: filePath });
+  return `/api/files/content?${params.toString()}`;
+};
